@@ -12,6 +12,7 @@ using namespace Parameters;
 struct integration_params { int alk; int alb; int ik; int ib; };
 
 struct C_integration_params_inner { int alb; int alk; int beb; int bek; int n1b; int n1k; int n2b; int n2k; double z_2; };
+
 struct C_integration_params_outer { int alb; int alk; int beb; int bek; int n1b; int n1k; int n2b; int n2k; };
 
 
