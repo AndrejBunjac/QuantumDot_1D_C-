@@ -7,8 +7,6 @@ namespace Parameters {
 
 	//Potential parameters
 	static double constexpr omega = 1.0;
-	static double constexpr distance = 7.0;
 	static int constexpr nmax = 1;
-	static double Vb = pow(omega, 2) * pow(distance, 2) / 32.0;
 
 };

@@ -9,11 +9,12 @@
 #include "gsl/gsl_eigen.h"
 #include "gsl/gsl_sort_vector.h"
 #include "FilesStrings.h"
+#include <vector>
 
 using namespace Parameters;
 using namespace std::chrono;
 
-int main()
+void EigenProblem(double distance, std::vector<double> &values)
 {
 
 	steady_clock::time_point startTime = steady_clock::now();
@@ -37,8 +38,8 @@ int main()
 					int alk_in = alk + 1;
 					int alb_in = alb + 1;
 					int count = Overlaps::GetCount(ib, ik, alb, alk, nmax, nmax, 2, 2);
-					Vmat[count] = Overlaps::VIntegrate(alk_in, alb_in, ik, ib);
-					Smat[count] = Overlaps::SIntegrate(alk_in, alb_in, ik, ib);
+					Vmat[count] = Overlaps::VIntegrate(alk_in, alb_in, ik, ib, distance);
+					Smat[count] = Overlaps::SIntegrate(alk_in, alb_in, ik, ib, distance);
 				}
 			}
 		}
@@ -75,7 +76,7 @@ int main()
 											alk * 2 +
 											bek;
 
-									double Cmat_el = Overlaps::CoulombMatel(alb_in, alk_in, beb_in, bek_in, i1b, i1k, i2b, i2k);
+									double Cmat_el = Overlaps::CoulombMatel(alb_in, alk_in, beb_in, bek_in, i1b, i1k, i2b, i2k, distance);
 
 									int count_a = Overlaps::GetCount(i1b, i1k, alb, alk, nmax, nmax, 2, 2);
 									int count_b = Overlaps::GetCount(i2b, i2k, beb, bek, nmax, nmax, 2, 2);
@@ -109,19 +110,20 @@ int main()
 	gsl_eigen_gensymm(Hmat, Emat, eigenvalues, w);
 	gsl_sort_vector(eigenvalues);
 
-	std::ofstream outputfile("EigenValuesSorted.txt");
-	if (!outputfile.is_open())
-	{
-		std::cout << "Output file could not be opened! Terminating!" << std::endl;
-		return 1;
-	}
+//	std::ofstream outputfile("EigenValuesSorted.txt");
+//	if (!outputfile.is_open())
+//	{
+//		std::cout << "Output file could not be opened! Terminating!" << std::endl;
+//		return 1;
+//	}
 
 	for (int i = 0; i < matsize; i++)
 	{
 		double eigenvalue = gsl_vector_get(eigenvalues, i);
-		outputfile << std::setprecision(10) << std::fixed;
-		outputfile << eigenvalue << '\n';
-		printf("eigenvalue =%g\n", eigenvalue);
+	//	outputfile << std::setprecision(10) << std::fixed;
+	//	outputfile << eigenvalue << '\n';
+	//	printf("eigenvalue =%g\n", eigenvalue);
+		values.push_back(eigenvalue);
 	}
 
 	gsl_eigen_gensymm_free(w);
@@ -132,4 +134,29 @@ int main()
 	steady_clock::time_point endTime = steady_clock::now();
 	duration<float> elapsed = endTime - startTime;
 	printf("Time elapsed since simulation start: %g\n", elapsed.count());
+}
+
+int main()
+{
+	std::ofstream outputfile("EigenValuesSorted.txt");
+	if (!outputfile.is_open())
+	{
+		std::cout << "Output file could not be opened! Terminating!" << std::endl;
+		return 1;
+	}
+
+	for (double distance = 1.0; distance <= 10.0; distance += 0.2) 
+	{
+		std::vector<double> values;
+		EigenProblem(distance, values);
+
+		for (int i = 0; i < values.size(); i++)
+		{
+			outputfile << std::setprecision(10) << std::fixed;
+			outputfile << values[i] << '\t';
+			printf("eigenvalue =%g\n", values[i]);
+		}
+		outputfile << '\n';
+		values.clear();
+	}
 }

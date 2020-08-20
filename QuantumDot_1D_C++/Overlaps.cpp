@@ -9,11 +9,13 @@
 
 using namespace Parameters;
 
-struct integration_params { int alk; int alb; int ik; int ib; };
+struct integration_params { int alk; int alb; int ik; int ib; double distance;  };
 
-struct C_integration_params_inner { int alb; int alk; int beb; int bek; int n1b; int n1k; int n2b; int n2k; double z_2; };
+struct C_integration_params_inner { int alb; int alk; int beb; int bek; int n1b; int n1k; int n2b; int n2k; double z_2; double distance;
+};
 
-struct C_integration_params_outer { int alb; int alk; int beb; int bek; int n1b; int n1k; int n2b; int n2k; };
+struct C_integration_params_outer { int alb; int alk; int beb; int bek; int n1b; int n1k; int n2b; int n2k; double distance;
+};
 
 
 double V_integration_function(double z, void* p)
@@ -23,12 +25,13 @@ double V_integration_function(double z, void* p)
 	int alb = (params->alb);
 	int ik = (params->ik);
 	int ib = (params->ib);
+	double distance = (params->distance);
 
-	double zk = (alk == 1) ? Overlaps::z1(z) : Overlaps::z2(z);
-	double zb = (alb == 1) ? Overlaps::z1(z) : Overlaps::z2(z);
+	double zk = (alk == 1) ? Overlaps::z1(z, distance) : Overlaps::z2(z, distance);
+	double zb = (alb == 1) ? Overlaps::z1(z, distance) : Overlaps::z2(z, distance);
 	double phiket = Overlaps::phi(ik, zk);
 	double phibra = Overlaps::phi(ib, zb);
-	double dv = Overlaps::DV(alk, z);
+	double dv = Overlaps::DV(alk, z, distance);
 	return phiket * dv * phibra;
 }
 
@@ -40,9 +43,10 @@ double S_integration_function(double z, void* p)
 	int alb = (params->alb);
 	int ik = (params->ik);
 	int ib = (params->ib);
+	double distance = (params->distance);
 
-	double zk = (alk == 1) ? Overlaps::z1(z) : Overlaps::z2(z);
-	double zb = (alb == 1) ? Overlaps::z1(z) : Overlaps::z2(z);
+	double zk = (alk == 1) ? Overlaps::z1(z, distance) : Overlaps::z2(z, distance);
+	double zb = (alb == 1) ? Overlaps::z1(z, distance) : Overlaps::z2(z, distance);
 	double phiket = Overlaps::phi(ik, zk);
 	double phibra = Overlaps::phi(ib, zb);
 	return phiket * phibra;
@@ -60,11 +64,12 @@ double C_integration_function_inner(double z_1, void* p)
 	int n2b = (params->n2b);
 	int n2k = (params->n2k);
 	double z_2 = (params->z_2);
+	double distance = (params->distance);
 
-	double zk1 = (alk == 1) ? Overlaps::z1(z_1) : Overlaps::z2(z_1);
-	double zb1 = (alb == 1) ? Overlaps::z1(z_1) : Overlaps::z2(z_1);
-	double zk2 = (bek == 1) ? Overlaps::z1(z_2) : Overlaps::z2(z_2);
-	double zb2 = (beb == 1) ? Overlaps::z1(z_2) : Overlaps::z2(z_2);
+	double zk1 = (alk == 1) ? Overlaps::z1(z_1, distance) : Overlaps::z2(z_1, distance);
+	double zb1 = (alb == 1) ? Overlaps::z1(z_1, distance) : Overlaps::z2(z_1, distance);
+	double zk2 = (bek == 1) ? Overlaps::z1(z_2, distance) : Overlaps::z2(z_2, distance);
+	double zb2 = (beb == 1) ? Overlaps::z1(z_2, distance) : Overlaps::z2(z_2, distance);
 
 	double phiket1 = Overlaps::phi(n1k, zk1);
 	double phibra1 = Overlaps::phi(n1b, zb1);
@@ -87,12 +92,13 @@ double C_integration_function_outer(double z_2, void* p)
 	int n1k = (params->n1k);
 	int n2b = (params->n2b);
 	int n2k = (params->n2k);
+	double distance = (params->distance);
 
 	gsl_integration_workspace* w = gsl_integration_workspace_alloc(1000);
 
 	double result;
 	double error;
-	C_integration_params_inner params_inner = { alb, alk, beb, bek, n1b, n1k, n2b, n2k, z_2 };
+	C_integration_params_inner params_inner = { alb, alk, beb, bek, n1b, n1k, n2b, n2k, z_2, distance };
 
 	double eps_abs = 1e-7;
 	double eps_rel = 1e-7;
@@ -110,49 +116,49 @@ double C_integration_function_outer(double z_2, void* p)
 }
 
 
-double Overlaps::V(const double& z)
+double Overlaps::V(const double& z, const double & distance)
 {
     return pow(omega, 2) * pow( pow( z, 2 ) - pow( distance / 2, 2 ), 2 ) / ( 2.0 * pow(distance, 2) );
 }
 
-double Overlaps::z1(const double& z)
+double Overlaps::z1(const double& z, const double & distance)
 {
     return distance / 2.0 + z;
 }
 
-double Overlaps::z2(const double& z)
+double Overlaps::z2(const double& z, const double & distance)
 {
     return distance / 2.0 - z;
 }
 
-double Overlaps::Vho1(const double& z)
+double Overlaps::Vho1(const double& z, const double & distance)
 {
 	using namespace std;
-	return pow(omega, 2) * pow(z1(z), 2) / 2;
+	return pow(omega, 2) * pow(z1(z, distance), 2) / 2;
 }
 
 
-double Overlaps::Vho2(const double& z)
+double Overlaps::Vho2(const double& z, const double & distance)
 {
 	using namespace std;
-	return pow(omega, 2) * pow(z2(z), 2) / 2;
+	return pow(omega, 2) * pow(z2(z, distance), 2) / 2;
 }
 
 
-double Overlaps::DV1(const double& z)
+double Overlaps::DV1(const double& z, const double & distance)
 {
-	return V(z) - Vho1(z);
+	return V(z, distance) - Vho1(z, distance);
 }
 
 
-double Overlaps::DV2(const double& z)
+double Overlaps::DV2(const double& z, const double & distance)
 {
-	return V(z) - Vho2(z);
+	return V(z, distance) - Vho2(z, distance);
 }
 
-double Overlaps::DV(const int& alpha, const double& z)
+double Overlaps::DV(const int& alpha, const double& z, const double & distance)
 {
-	return (alpha == 1) ? DV1(z) : DV2(z);
+	return (alpha == 1) ? DV1(z, distance) : DV2(z, distance);
 }
 
 double Overlaps::phi(const int& nz, const double& z)
@@ -177,13 +183,13 @@ double Overlaps::Eharmonic(const int& n_principal)
 	return omega * (n_principal + 1.0 / 2);
 }
 
-double Overlaps::VIntegrate(const int& alk, const int& alb, const int& ik, const int& ib)
+double Overlaps::VIntegrate(const int& alk, const int& alb, const int& ik, const int& ib, const double& distance)
 {
 	gsl_integration_workspace* w = gsl_integration_workspace_alloc(1000);
 
 	double result;
 	double error;
-	integration_params params = { alk, alb, ik, ib };
+	integration_params params = { alk, alb, ik, ib, distance };
 
 	double eps_abs = 1e-7;
 	double eps_rel = 1e-7;
@@ -200,13 +206,13 @@ double Overlaps::VIntegrate(const int& alk, const int& alb, const int& ik, const
 }
 
 
-double Overlaps::SIntegrate(const int& alk, const int& alb, const int& ik, const int& ib)
+double Overlaps::SIntegrate(const int& alk, const int& alb, const int& ik, const int& ib, const double & distance)
 {
 	gsl_integration_workspace* w = gsl_integration_workspace_alloc(1000);
 
 	double result;
 	double error;
-	integration_params params = { alk, alb, ik, ib };
+	integration_params params = { alk, alb, ik, ib, distance };
 
 	double eps_abs = 1e-7;
 	double eps_rel = 1e-7;
@@ -222,13 +228,13 @@ double Overlaps::SIntegrate(const int& alk, const int& alb, const int& ik, const
 	return result;
 }
 
-double Overlaps::CoulombMatel(const int& alb, const int& alk, const int& beb, const int& bek, const int& n1b, const int& n1k, const int& n2b, const int& n2k)
+double Overlaps::CoulombMatel(const int& alb, const int& alk, const int& beb, const int& bek, const int& n1b, const int& n1k, const int& n2b, const int& n2k, const double & distance )
 {
 	gsl_integration_workspace* w = gsl_integration_workspace_alloc(1000);
 
 	double result;
 	double error;
-	C_integration_params_outer params_outer = { alb, alk, beb, bek, n1b, n1k, n2b, n2k };
+	C_integration_params_outer params_outer = { alb, alk, beb, bek, n1b, n1k, n2b, n2k, distance };
 
 	double eps_abs = 1e-7;
 	double eps_rel = 1e-7;
