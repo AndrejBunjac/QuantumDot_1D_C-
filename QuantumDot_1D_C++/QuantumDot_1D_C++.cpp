@@ -14,7 +14,7 @@
 using namespace Parameters;
 using namespace std::chrono;
 
-void EigenProblem(double distance, std::vector<double> &values)
+void EigenProblem(double distance, std::vector<double> &values, bool hasInteraction)
 {
 
 	steady_clock::time_point startTime = steady_clock::now();
@@ -76,7 +76,12 @@ void EigenProblem(double distance, std::vector<double> &values)
 											alk * 2 +
 											bek;
 
-									double Cmat_el = Overlaps::CoulombMatel(alb_in, alk_in, beb_in, bek_in, i1b, i1k, i2b, i2k, distance);
+									double Cmat_el = 0.0;
+
+									if (hasInteraction)
+									{
+										Cmat_el = Overlaps::CoulombMatel(alb_in, alk_in, beb_in, bek_in, i1b, i1k, i2b, i2k, distance);
+									}
 
 									int count_a = Overlaps::GetCount(i1b, i1k, alb, alk, nmax, nmax, 2, 2);
 									int count_b = Overlaps::GetCount(i2b, i2k, beb, bek, nmax, nmax, 2, 2);
@@ -110,19 +115,9 @@ void EigenProblem(double distance, std::vector<double> &values)
 	gsl_eigen_gensymm(Hmat, Emat, eigenvalues, w);
 	gsl_sort_vector(eigenvalues);
 
-//	std::ofstream outputfile("EigenValuesSorted.txt");
-//	if (!outputfile.is_open())
-//	{
-//		std::cout << "Output file could not be opened! Terminating!" << std::endl;
-//		return 1;
-//	}
-
 	for (int i = 0; i < matsize; i++)
 	{
 		double eigenvalue = gsl_vector_get(eigenvalues, i);
-	//	outputfile << std::setprecision(10) << std::fixed;
-	//	outputfile << eigenvalue << '\n';
-	//	printf("eigenvalue =%g\n", eigenvalue);
 		values.push_back(eigenvalue);
 	}
 
@@ -133,30 +128,63 @@ void EigenProblem(double distance, std::vector<double> &values)
 
 	steady_clock::time_point endTime = steady_clock::now();
 	duration<float> elapsed = endTime - startTime;
-	printf("Time elapsed since simulation start: %g\n", elapsed.count());
+	printf("Time elapsed point: %g\n", elapsed.count());
 }
 
 int main()
 {
-	std::ofstream outputfile("EigenValuesSorted.txt");
-	if (!outputfile.is_open())
+	steady_clock::time_point started = steady_clock::now();
+
+	std::ofstream outputfileInt("EigenValuesIntSorted.dat");
+	if (!outputfileInt.is_open())
+	{
+		std::cout << "Output file could not be opened! Terminating!" << std::endl;
+		return 1;
+	}
+	std::ofstream outputfileNoInt("EigenValuesNoIntSorted.dat");
+	if (!outputfileNoInt.is_open())
 	{
 		std::cout << "Output file could not be opened! Terminating!" << std::endl;
 		return 1;
 	}
 
-	for (double distance = 1.0; distance <= 10.0; distance += 0.2) 
+	for (double distance = 1.0; distance <= 10.0; distance += 0.1) 
 	{
 		std::vector<double> values;
-		EigenProblem(distance, values);
+		EigenProblem(distance, values, true);
+
+		outputfileInt << std::setprecision(2) << std::fixed;
+		outputfileInt << distance << '\t';
 
 		for (int i = 0; i < values.size(); i++)
 		{
-			outputfile << std::setprecision(10) << std::fixed;
-			outputfile << values[i] << '\t';
-			printf("eigenvalue =%g\n", values[i]);
+			outputfileInt << std::setprecision(10) << std::fixed;
+			outputfileInt << values[i] << '\t';
+//			printf("eigenvalue =%g\n", values[i]);
 		}
-		outputfile << '\n';
+		outputfileInt << '\n';
 		values.clear();
 	}
+
+	for (double distance = 1.0; distance <= 10.0; distance += 0.1)
+	{
+		std::vector<double> values;
+		EigenProblem(distance, values, false);
+
+		outputfileNoInt << std::setprecision(2) << std::fixed;
+		outputfileNoInt << distance << '\t';
+
+		for (int i = 0; i < values.size(); i++)
+		{
+			outputfileNoInt << std::setprecision(10) << std::fixed;
+			outputfileNoInt << values[i] << '\t';
+//			printf("eigenvalue =%g\n", values[i]);
+		}
+		outputfileNoInt << '\n';
+		values.clear();
+	}
+
+	steady_clock::time_point finished = steady_clock::now();
+	duration<float> elapsed = finished - started;
+	printf("TOTAL TIME ELAPSED: %g\n", elapsed.count());
 }
